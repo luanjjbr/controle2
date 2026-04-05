@@ -11,7 +11,11 @@
 #include "driver/uart.h"
 #include <math.h>
 
+
+
 static const char *TAG = "APP_MAIN";
+
+bool print_flag = false;
 
 void blink_task(void *pvParameters)
 {
@@ -34,12 +38,27 @@ void get_button_state(void *pvParameters)
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
+int64_t t_ant = 0;
+int64_t periodo = 1000000; // 1 segundo em microsegundos
 
 void set_sinc(void *pvParameters)
 {
-    
-    func_sinc();
+    periodo = (int64_t)(get_ts() * 1000000.0); // segundos → µs
 
+    while (1)
+    {
+        int64_t agora = esp_timer_get_time();
+
+        while ((agora - t_ant) >= periodo)
+        {
+            t_ant += periodo;
+            func_sinc();
+            if(print_flag) {
+                get_printf();
+            }
+        }
+        vTaskDelay(1);
+    }
 }
 
 void serial_monitor_task(void *pvParameters)
@@ -62,6 +81,10 @@ void serial_monitor_task(void *pvParameters)
                 ESP_LOGI("SERIAL", ">>> %s <<<", buffer);
                 reset_sinc();
             }
+            else if (buffer[0] == 'p' || buffer[0] == 'P') {
+                ESP_LOGI("SERIAL", ">>> %s <<<", buffer);
+                print_flag = !print_flag; // Alterna o estado do print_flag
+            }
             else {
 
                 float v1, v2;
@@ -69,6 +92,7 @@ void serial_monitor_task(void *pvParameters)
                 if (sscanf(buffer, "%f,%f", &v1, &v2) == 2) {
                     reset_sinc();
                     config_hz_ts(v1, v2);
+                    periodo = (int64_t)(get_ts() * 1000000.0);
                     ESP_LOGI("SERIAL", "Valor 1: %.2f", v1);
                     ESP_LOGI("SERIAL", "Valor 2: %.2f", v2);
 
@@ -77,7 +101,10 @@ void serial_monitor_task(void *pvParameters)
                 }
             }
         }
-        vTaskDelay(pdMS_TO_TICKS(10));
+        if(!print_flag) {
+            get_printf_3();
+        }
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
 

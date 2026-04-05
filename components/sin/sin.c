@@ -25,42 +25,35 @@ float a1 = 0.0f;
 
 
 // Função para deslocar os dados (Fila/Shift Register)
-void deslocar_dados(float array[], int tamanho) {
-    // Começamos de trás para frente para não sobrescrever os dados errados
-    for (int i = tamanho - 1; i > 0; i--) {
-        array[i] = array[i - 1];
-    }
+void deslocar_dados(float array[]) {
+    array[2] = array[1];
+    array[1] = array[0];
 }
 
 
 void func_sinc(void) {
-    while (true) {
+    //while (true) {
         // 1. Move os valores antigos para o passado:
         // u[1] vira u[2], u[0] vira u[1]
-        deslocar_dados(u, 3);
-        deslocar_dados(y, 3);
-
-
+        deslocar_dados(u);
+        deslocar_dados(y);
             if(!button_get_state()) {
                 u[0] =condition; // Pressionado
             } else {
                 u[0] =condition_2; // Não pressionado
             }
-        
-        
-
         // 3. Calcula a saída atual baseada no passado
         // y[k] = b1*u[k-1] - a1*y[k-1] - 1*y[k-2]
         y[0] = num[1] * u[1] - den[1] * y[1] - den[2] * y[2];
         // Salva: tempo | entrada | saída
-        printf(">Entrada:%f\n", u[0]);
-        printf(">Saida_Y:%f\n", y[0]);
+        // printf(">Entrada:%f\n", u[0]);
+        // printf(">Saida_Y:%f\n", y[0]);
         // printf("Entrada_u:%f Saida_y:%f\n", u[0], y[0]);
         // ESP_LOGI(TAG, "Estado do botão: %f", y[0]);
 
-        // vTaskDelay(pdMS_TO_TICKS((int)(ts * 1000)));
-        vTaskDelay(pdMS_TO_TICKS((int)(ts * 1000))); // Atraso fixo para evitar sobrecarga, ajuste conforme necessário
-    }
+        //vTaskDelay(pdMS_TO_TICKS((int)(ts * 1000)));
+    //     vTaskDelay(pdMS_TO_TICKS((int)(ts * 1000))); // Atraso fixo para evitar sobrecarga, ajuste conforme necessário
+    //}
 }
 
 void reset_sinc(void) {
@@ -95,6 +88,34 @@ void config_hz_ts(float new_f, float new_ts) {
 
     num[0] = 0.0f; num[1] = b1; num[2] = 0.0f;
     den[0] = 1.0f; den[1] = a1; den[2] = 1.0f;
+}
+
+// void get_printf(void) {
+//     printf(">Entrada:%f\n", u[0]);
+//     printf(">Saida_Y:%f\n", y[0]);
+// }
+
+void get_printf(void) {
+    printf(">Entrada:%f\n>Saida_Y:%f\n", u[0], y[0]);
+}
+void get_printf_3(void) {
+    printf(">Saida_Y_2:%f\n", y[0]);
+}
+
+int count = 1;
+void get_printf_2(void) {
+    if (count==1)
+    {
+       count = 0;
+    }else
+    {
+        count = 1;
+    } 
+    printf(">Time%i:%i\n", count, 0);
+}
+
+float get_ts(void) {
+    return ts;
 }
 
 // f =3           # frequência do sinal (Hz)
