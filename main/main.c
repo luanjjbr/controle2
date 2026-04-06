@@ -9,6 +9,7 @@
 #include "esp_timer.h"
 #include "esp_vfs_dev.h"
 #include "driver/uart.h"
+#include <ssd1306.h>
 #include <math.h>
 
 
@@ -90,11 +91,20 @@ void serial_monitor_task(void *pvParameters)
                 float v1, v2;
 
                 if (sscanf(buffer, "%f,%f", &v1, &v2) == 2) {
+                    char str1[32];
+                    char str2[32];
                     reset_sinc();
                     config_hz_ts(v1, v2);
                     periodo = (int64_t)(get_ts() * 1000000.0);
                     ESP_LOGI("SERIAL", "Valor 1: %.2f", v1);
                     ESP_LOGI("SERIAL", "Valor 2: %.2f", v2);
+                    snprintf(str1, sizeof(str1), "%.1fHz|%.1fs", v1, 1/v1);
+                    snprintf(str2, sizeof(str2), "%.0fHz|%.3fms", (v2*v1), (1/(v2*v1))*1000);
+                    ssd1306_clear();
+                    ssd1306_print_str(0, 17, "IFCE: Luan", false);
+                    ssd1306_print_str(0, 27, str1, false);
+                    ssd1306_print_str(0, 37, str2, false);
+                    ssd1306_display();
 
                 } else {
                     ESP_LOGI("SERIAL", "Formato invalido: %s", buffer);
@@ -117,8 +127,13 @@ void app_main(void)
 
     ESP_LOGI(TAG, "Iniciando sistema... criando task do blink");
     esp_log_level_set("*", ESP_LOG_NONE); // Desativa logs de outros componentes para clareza
-
-    
+    init_ssd1306();
+    ssd1306_print_str(18, 17, "Hello World!", false);
+    ssd1306_display();
+    ssd1306_clear();
+    vTaskDelay(pdMS_TO_TICKS(5000));
+    ssd1306_print_str(0, 17, "IFCE: Luan", false);
+    ssd1306_display();
 
     xTaskCreate(
         set_sinc,       
